@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Contrôle des relais</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f8f9fa;
+      padding: 40px;
+      text-align: center;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    .on {
+      background-color: #28a745;
+      color: white;
+    }
+
+    .off {
+      background-color: #dc3545;
+      color: white;
+    }
+
+    .all-control {
+      background-color: #007bff;
+      color: white;
+      font-weight: bold;
+    }
+
+    .relay-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 20px;
+      max-width: 800px;
+      margin: auto;
+    }
+
+    .relay-card {
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .status {
+      margin-top: 10px;
+      font-weight: bold;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <h1>Panneau de Contrôle - 8 Relais</h1>
+
+  <div class="controls">
+    <button class="all-control" onclick="allOn()">Allumer tous</button>
+    <button class="all-control" onclick="allOff()">Éteindre tous</button>
+  </div>
+
+  <div class="relay-grid" id="relayGrid">
+    <!-- Cartes relais générées dynamiquement -->
+  </div>
+
+  <script>
+    const relayCount = 8;
+    const grid = document.getElementById('relayGrid');
+
+    // Créer les cartes relais
+    for (let i = 0; i < relayCount; i++) {
+      const card = document.createElement('div');
+      card.className = 'relay-card';
+
+      const btn = document.createElement('button');
+      btn.className = 'off';
+      btn.textContent = `Relais ${i + 1}`;
+      btn.onclick = async () => {
+        await fetch(`/api/toggle/${i}`);
+        updateStates();
+      };
+
+      const status = document.createElement('div');
+      status.className = 'status';
+      status.textContent = 'Éteint';
+
+      card.appendChild(btn);
+      card.appendChild(status);
+      grid.appendChild(card);
+    }
+
+    // Mettre à jour l’état des relais
+    async function updateStates() {
+      const res = await fetch('/api/status');
+      const data = await res.json();
+      const cards = document.querySelectorAll('.relay-card');
+
+      data.relayStates.forEach((state, i) => {
+        const btn = cards[i].querySelector('button');
+        const status = cards[i].querySelector('.status');
+
+        if (state) {
+          btn.className = 'on';
+          status.textContent = 'Allumé';
+        } else {
+          btn.className = 'off';
+          status.textContent = 'Éteint';
+        }
+      });
+    }
+
+    async function allOn() {
+      await fetch('/api/all/on');
+      updateStates();
+    }
+
+    async function allOff() {
+      await fetch('/api/all/off');
+      updateStates();
+    }
+
+    // Rafraîchir tous les 2s
+    updateStates();
+    setInterval(updateStates, 2000);
+  </script>
+</body>
+</html>
+
